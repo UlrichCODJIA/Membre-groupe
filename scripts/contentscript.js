@@ -60,7 +60,6 @@ async function get_first_uid_and_cursor() {
     if (Object.keys(firsts_users_uid).length != 0 && cursor != null) {
         get_uid(
             progressCallback,
-            'https://www.facebook.com/api/graphql/',
             firsts_users_uid,
             cursor[1],
             group_id_and_id,
@@ -99,15 +98,29 @@ async function get_first_uid_and_cursor() {
     }
 }
 
-function get_uid(progress, url, first_user_list, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a) {
+function getElementsByXPath(xpath, parent) {
+    let results = [];
+    let query = document.evaluate(
+        xpath,
+        parent || document,
+        null,
+        XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+        null
+    );
+    for (let i = 0, length = query.snapshotLength; i < length; ++i) {
+        results.push(query.snapshotItem(i));
+    }
+    return results;
+}
+
+function get_uid(progress, first_user_list, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a) {
     const formData = `av=${__user}&__user=${__user}&__a=${__a}&__dyn=&__csr=&__req=&__hs=19276.HYP%3Acomet_pkg.2.1.0.2.1&dpr=1.5&__ccg=EXCELLENT&__rev=${__rev_and__spin_r}&__s=&__hsi=${__hsi}&__comet_req=${__comet_req}&fb_dtsg=${fb_dtsg}&jazoest=${jazoest}&lsd=${lsd}&__spin_r=${__rev_and__spin_r}&__spin_b=${__spin_b}&__spin_t=${__spin_t}&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=GroupsCometMembersPageNewForumMembersSectionRefetchQuery&variables=%7B%22count%22%3A10%2C%22cursor%22%3A%22${cursor}%22%2C%22groupID%22%3A%22${group_id_and_id}%22%2C%22scale%22%3A1.5%2C%22id%22%3A%22${group_id_and_id}%22%7D&server_timestamps=true&doc_id=${doc_id}`;
-    console.log(formData);
 
     const myHeaders = new Headers({
         'scheme': 'https',
         'accept': '*/*',
         'content-type': 'application/x-www-form-urlencoded',
-        'referer': url,
+        'referer': window.location.href,
     });
 
     const myOptions = {
@@ -127,13 +140,18 @@ function get_uid(progress, url, first_user_list, cursor, group_id_and_id, doc_id
                 let new_forum_members = json.data.node.new_forum_members;
                 let user_list = new_forum_members.edges;
                 for (var i = 0; i < user_list.length; i++) {
-                    first_user_list[user_list[i].node.name] = user_list[i].node.id
+                    first_user_list[user_list[i].node.name] = user_list[i].node.id;
                 };
+
+                try {
+                    const members_count = parseInt(getElementsByXPath('/html/body/div[1]/div/div[1]/div/div[3]/div/div/div/div[1]/div[1]/div[4]/div/div/div/div/div/div/div/div/div/div/div[1]/div/div/div/div/div[1]/h2/span/span/span/strong')[0].childNodes[1].nodeValue);
+                    console.log(members_count, Object.keys(first_user_list).length);
+                } catch (err) { };
 
                 if (new_forum_members.page_info.has_next_page == true) {
                     cursor = new_forum_members.page_info.end_cursor
                     progress && progress(first_user_list);
-                    get_uid(progress, url, first_user_list, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a).then(resolve).catch(reject)
+                    get_uid(progress, first_user_list, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a).then(resolve).catch(reject)
                 } else {
                     resolve(first_user_list);
                 }

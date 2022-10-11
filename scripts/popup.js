@@ -66,7 +66,7 @@ function download(profiles_hrefs, profiles_href_length) {
                 .download({
                     url: url,
                     filename:
-                        "PageAvis/" +
+                        "Membre-Groupe/" +
                         "Report-" +
                         now.getFullYear() +
                         "-" +
@@ -88,7 +88,7 @@ function download(profiles_hrefs, profiles_href_length) {
             /* Export to file (start a download) */
             XLSX.writeFile(
                 wb,
-                "PageAvis/" +
+                "Membre-Groupe/" +
                 "Report-" +
                 now.getFullYear() +
                 "-" +
