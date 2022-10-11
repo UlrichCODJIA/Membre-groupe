@@ -16,15 +16,18 @@
       "scripting",
       "downloads"
     ],
-    "host_permissions": ["http://www.facebook.com/*", "https://www.facebook.com/*"],
+    "host_permissions": [
+      "http://www.facebook.com/*",
+      "https://www.facebook.com/*",
+      "http://web.facebook.com/*",
+      "https://web.facebook.com/*"
+    ],
     "content_scripts": [{
       "matches": [
         "http://www.facebook.com/*",
         "https://www.facebook.com/*",
         "http://web.facebook.com/*",
-        "https://web.facebook.com/*",
-        "http://m.facebook.com/*",
-        "https://m.facebook.com/*"
+        "https://web.facebook.com/*"
       ],
         "all_frames": true,
         "js": ["./scripts/contentscript.js"]
