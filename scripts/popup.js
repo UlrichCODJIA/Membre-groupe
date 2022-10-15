@@ -16,7 +16,7 @@ get_uid_btn.addEventListener("click", start);
 chrome.runtime.onMessage.addListener((response, callback) => {
     switch (response.message) {
         case "first_users_uid_and_cursor":
-            download(response.first_user_list, response.first_user_list_length);
+            download(response.first_user_list, Object.keys(response.first_user_list).length);
             break;
         case "error":
             var h5 = document.createElement("h5");
@@ -25,6 +25,15 @@ chrome.runtime.onMessage.addListener((response, callback) => {
                 h5,
                 document.body.children[0].children[5]
             );
+            break;
+        case "partial_error":
+            var h5 = document.createElement("h5");
+            h5.appendChild(document.createTextNode(`Error: ${response.error_msg}`));
+            document.body.children[0].insertBefore(
+                h5,
+                document.body.children[0].children[5]
+            );
+            download(response.first_user_list, Object.keys(response.first_user_list).length);
             break;
     }
 });
