@@ -2,11 +2,14 @@ const group_member_count = parseInt(/group_member_profiles":{"count":([^"]+),/g.
 
 chrome.runtime.onMessage.addListener((response, callback) => {
     if (response.message == "start_membre_groupe") {
-        console.log("Start Membre-Groupe");
+        console.log(
+            "%cStart Membre-Groupe",
+            "color: white; font-weight: 900; font-size: 25px; background-color: blue;padding: 2px"
+        );
         if (group_member_count < 12500) {
-            console.log("You need to wait approximatively 10min or less for the extraction to finish.")
+            console.log("%cYou need to wait approximatively 10min or less for the extraction to finish.", "font-weight: 900; font-size: 20px")
         } else {
-            console.log(`You need to wait approximatively ${(Math.round(group_member_count / 10000) * 10) + ((Math.round(group_member_count / 10000) - 1) * 30)}min or less for the extraction to finish.`);
+            console.log(`%cYou need to wait approximatively ${(Math.round(group_member_count / 10000) * 10) + ((Math.round(group_member_count / 10000) - 1) * 30)}min or less for the extraction to finish.`, "font-weight: 900; font-size: 20px");
         };
         get_first_uid_and_cursor();
     }
@@ -26,17 +29,22 @@ function* range(start = 0, end = null, step = 1) {
 var numbers = Array.from(range(10000, 1010000, 10000));
 
 async function user_get_request_waiter(firsts_users_uid, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a) {
-    console.log('ok');
+    console.clear();
+    console.log(
+        "%cWaiting 30 minutes to continue extraction",
+        "color: white; font-weight: 900; font-size: 25px; background-color: blue;padding: 2px"
+    );
 
     const asyncUppercase = item =>
         new Promise(resolve =>
             setTimeout(
                 () => resolve(item.toUpperCase())
-                , 60000)
+                , 1800000)
         );
 
     if (Object.keys(firsts_users_uid).length < numbers.slice(-1)[0] && numbers[0] <= group_member_count + 41000) {
         const uppercaseItem = await asyncUppercase('a');
+        console.clear();
         get_uid(progressCallback, firsts_users_uid, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a, Object.keys(firsts_users_uid).length + 10000)
             .then(result => {
                 if (result.cursor != undefined) {
@@ -48,7 +56,10 @@ async function user_get_request_waiter(firsts_users_uid, cursor, group_id_and_id
                     chrome.runtime.sendMessage(
                         { message: "partial_error", error_msg: result.error, first_user_list: result.first_user_list },
                         function (response) {
-                            console.log(result.error);
+                            console.log(
+                                `%c${result.error.toUpperCase()}. RETRY WHEN THIS FEATURE WILL BE UNLOCKED`,
+                                "color: red; font-weight: 900; font-size: 25px;padding: 2px"
+                            );
                         }
                     );
                 } else {
@@ -63,7 +74,10 @@ async function user_get_request_waiter(firsts_users_uid, cursor, group_id_and_id
         chrome.runtime.sendMessage(
             { message: "error", error_msg: "ERROR TRYING TO GET THE DATAS" },
             function (response) {
-                console.log("error");
+                console.log(
+                    "%cERROR!!! PLEASE RETRY OR CONTACT ME",
+                    "color: red; font-weight: 900; font-size: 25px;padding: 2px"
+                );
             }
         );
     };
@@ -119,19 +133,25 @@ async function get_first_uid_and_cursor() {
     var cursor = /{"has_next_page":true,"end_cursor":"([^"]+)"}}/.exec(document.body.innerHTML);
 
     if (Object.keys(firsts_users_uid).length != 0 && cursor != null) {
-        console.log('first attempt');
+        console.clear();
+        console.log(
+            "%cExtracting",
+            "color: white; font-weight: 900; font-size: 25px; background-color: blue;padding: 2px"
+        );
         get_uid(progressCallback, firsts_users_uid, cursor[1], group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a, 10000)
             .then(result => {
                 if (result.cursor != undefined) {
                     cursor = result.cursor;
                     firsts_users_uid = result.first_user_list;
-                    console.log(Object.keys(firsts_users_uid).length);
                     user_get_request_waiter(firsts_users_uid, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a);
                 } else if (result.error != undefined) {
                     chrome.runtime.sendMessage(
                         { message: "partial_error", error_msg: result.error, first_user_list: result.first_user_list },
                         function (response) {
-                            console.log(result.error);
+                            console.log(
+                                `%c${result.error.toUpperCase()}. RETRY WHEN THIS FEATURE WILL BE UNLOCKED`,
+                                "color: red; font-weight: 900; font-size: 25px;padding: 2px"
+                            );
                         }
                     );
                 } else {
@@ -146,7 +166,10 @@ async function get_first_uid_and_cursor() {
         chrome.runtime.sendMessage(
             { message: "error", error_msg: "ERROR TRYING TO GET THE DATAS" },
             function (response) {
-                console.log("error");
+                console.log(
+                    "%cERROR!!! PLEASE RETRY OR CONTACT ME",
+                    "color: red; font-weight: 900; font-size: 25px;padding: 2px"
+                );
             }
         );
     };
@@ -169,19 +192,17 @@ function getElementsByXPath(xpath, parent) {
 
 function get_uid(progress, first_user_list, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a, length_check) {
 
-    const formData = `av=${__user}&__user=${__user}&__a=${__a}&__dyn=&__csr=&__req=&__hs=19276.HYP%3Acomet_pkg.2.1.0.2.1&dpr=1.5&__ccg=EXCELLENT&__rev=${__rev_and__spin_r}&__s=&__hsi=${__hsi}&__comet_req=${__comet_req}&fb_dtsg=${fb_dtsg}&jazoest=${jazoest}&lsd=${lsd}&__spin_r=${__rev_and__spin_r}&__spin_b=${__spin_b}&__spin_t=${__spin_t}&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=GroupsCometMembersPageNewForumMembersSectionRefetchQuery&variables=%7B%22count%22%3A10%2C%22cursor%22%3A%22${cursor}%22%2C%22groupID%22%3A%22${group_id_and_id}%22%2C%22scale%22%3A1.5%2C%22id%22%3A%22${group_id_and_id}%22%7D&server_timestamps=true&doc_id=${doc_id}`;
-
+    const payload = `av=${__user}&__user=${__user}&__a=${__a}&__dyn=&__csr=&__req=&__hs=19276.HYP%3Acomet_pkg.2.1.0.2.1&dpr=1.5&__ccg=EXCELLENT&__rev=${__rev_and__spin_r}&__s=&__hsi=${__hsi}&__comet_req=${__comet_req}&fb_dtsg=${fb_dtsg}&jazoest=${jazoest}&lsd=${lsd}&__spin_r=${__rev_and__spin_r}&__spin_b=${__spin_b}&__spin_t=${__spin_t}&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=GroupsCometMembersPageNewForumMembersSectionRefetchQuery&variables=%7B%22count%22%3A10%2C%22cursor%22%3A%22${cursor}%22%2C%22groupID%22%3A%22${group_id_and_id}%22%2C%22scale%22%3A1.5%2C%22id%22%3A%22${group_id_and_id}%22%7D&server_timestamps=true&doc_id=${doc_id}`;
     const myHeaders = new Headers({
         'scheme': 'https',
         'accept': '*/*',
         'content-type': 'application/x-www-form-urlencoded',
         'referer': window.location.href,
     });
-
     const myOptions = {
         method: "POST",
         headers: myHeaders,
-        body: formData,
+        body: payload,
         mode: "cors",
     };
     const myRequest = new Request('https://www.facebook.com/api/graphql/');
@@ -192,21 +213,20 @@ function get_uid(progress, first_user_list, cursor, group_id_and_id, doc_id, lsd
             }
             response.json().then(json => {
                 console.log(json);
-                let new_forum_members = json.data.node.new_forum_members;
-                let user_list = new_forum_members.edges;
-                for (var i = 0; i < user_list.length; i++) {
-                    first_user_list[user_list[i].node.name] = user_list[i].node.id;
-                };
-
-                if (new_forum_members.page_info.has_next_page == true && Object.keys(first_user_list).length < length_check) {
-                    console.log(Object.keys(first_user_list).length);
+                try {
+                    var new_forum_members = json.data.node.new_forum_members;
+                    var user_list = new_forum_members.edges;
+                    for (var i = 0; i < user_list.length; i++) {
+                        first_user_list[user_list[i].node.name] = user_list[i].node.id;
+                    };
+                } catch(err) {};
+                if (new_forum_members != undefined && new_forum_members.page_info.has_next_page == true && Object.keys(first_user_list).length < length_check) {
                     cursor = new_forum_members.page_info.end_cursor
                     progress && progress(first_user_list);
                     get_uid(progress, first_user_list, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a, length_check)
                         .then(resolve)
                         .catch(reject)
-                } else if (new_forum_members.page_info.has_next_page == true && Object.keys(first_user_list).length >= length_check) {
-                    console.log(Object.keys(first_user_list).length);
+                } else if (new_forum_members != undefined && new_forum_members.page_info.has_next_page == true && Object.keys(first_user_list).length >= length_check) {
                     const new_etat = {};
                     new_etat['cursor'] = new_forum_members.page_info.end_cursor;
                     new_etat['first_user_list'] = first_user_list;
@@ -216,7 +236,7 @@ function get_uid(progress, first_user_list, cursor, group_id_and_id, doc_id, lsd
                     const new_etat = {};
                     new_etat['error'] = json.errors[0].message;
                     new_etat['first_user_list'] = first_user_list;
-                    console.log(Object.keys(first_user_list).length);
+                    progress && progress(first_user_list);
                     resolve(new_etat);
                 } else {
                     resolve(first_user_list);
@@ -227,5 +247,5 @@ function get_uid(progress, first_user_list, cursor, group_id_and_id, doc_id, lsd
 
 function progressCallback(first_user_list) {
     // render progress
-    console.log(`${first_user_list.length} loaded`);
+    console.log(`${Object.keys(first_user_list).length} loaded`);
 }
