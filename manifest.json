@@ -30,7 +30,7 @@
         "https://web.facebook.com/*"
       ],
         "all_frames": true,
-        "js": ["./scripts/contentscript.js"]
+        "js": ["./scripts/xlsx.full.min.js", "./scripts/contentscript.js"]
     }],
     "action": {
       "default_icon": {

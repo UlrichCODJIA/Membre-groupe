@@ -1,8 +1,8 @@
 const group_member_count = parseInt(/group_member_profiles":{"count":([^"]+),/g.exec(document.body.innerHTML)[1]);
-var numbers = Array.from(range(8000, 1008000, 8000));
+var numbers = Array.from(range(8000, 100008000, 8000));
 
 let table = document.createElement('table');
-table.style.display = none;
+table.style.display = 'none';
 let thead = document.createElement('thead');
 var name_elmt = document.createElement("th");
 var name_text = document.createTextNode("Firstname / Lastname");
@@ -36,80 +36,51 @@ chrome.runtime.onMessage.addListener((response, callback) => {
     }
 });
 
-function onStartedDownload(id) {
-    console.log(`Started downloading: ${id}`);
-}
-
-function onFailed(error) {
-    console.log(`Download failed: ${error}`);
-}
-
-function download(profiles_hrefs, profiles_href_length) {
-    var time = setInterval(() => {
-        if (profiles_href_length == Object.keys(profiles_hrefs).length) {
-            clearInterval(time);
-            var allEntries = "";
-            for (const i in profiles_hrefs) {
-                allEntries = allEntries.concat(i + " : " + profiles_hrefs[i] + "\n");
-                var no = document.createElement("td");
-                var no_text = document.createTextNode(i);
-                no.appendChild(no_text);
-                var uid = document.createElement("td");
-                var uid_text = document.createTextNode(profiles_hrefs[i]);
-                uid.appendChild(uid_text);
-                var tr = document.createElement("tr");
-                tr.appendChild(no);
-                tr.appendChild(uid);
-                tbody.appendChild(tr);
-            }
-            const now = new Date();
-            const blob = new Blob([allEntries], {
-                type: "text/plain",
-            });
-            var url = URL.createObjectURL(blob);
-            chrome.downloads
-                .download({
-                    url: url,
-                    filename:
-                        "Membre-Groupe/" +
-                        "Report-" +
-                        now.getFullYear() +
-                        "-" +
-                        now.getMonth() +
-                        "-" +
-                        now.getDate() +
-                        " at " +
-                        now.getHours() +
-                        "_" +
-                        now.getMinutes() +
-                        "_" +
-                        now.getMilliseconds() +
-                        ".txt",
-                    conflictAction: "uniquify",
-                })
-                .then(onStartedDownload, onFailed);
-            /* Create worksheet from HTML DOM TABLE */
-            var wb = XLSX.utils.table_to_book(table);
-            /* Export to file (start a download) */
-            XLSX.writeFile(
-                wb,
-                "Membre-Groupe/" +
-                "Report-" +
-                now.getFullYear() +
-                "-" +
-                now.getMonth() +
-                "-" +
-                now.getDate() +
-                " at " +
-                now.getHours() +
-                "_" +
-                now.getMinutes() +
-                "_" +
-                now.getMilliseconds() +
-                ".xlsx"
-            );
-        }
+function data_concat_and_add_to_table(first_user_list) {
+    var allEntries = "";
+    for (const i in first_user_list) {
+        allEntries = allEntries.concat(i + " : " + first_user_list[i] + "\n");
+        var no = document.createElement("td");
+        var no_text = document.createTextNode(i);
+        no.appendChild(no_text);
+        var uid = document.createElement("td");
+        var uid_text = document.createTextNode(first_user_list[i]);
+        uid.appendChild(uid_text);
+        var tr = document.createElement("tr");
+        tr.appendChild(no);
+        tr.appendChild(uid);
+        tbody.appendChild(tr);
+    };
+    const blob = new Blob([allEntries], {
+        type: "text/plain",
     });
+    var url = URL.createObjectURL(blob);
+
+    return url;
+}
+
+function download_as_excel(table) {
+    const now = new Date();
+    /* Create worksheet from HTML DOM TABLE */
+    var wb = XLSX.utils.table_to_book(table);
+    /* Export to file (start a download) */
+    XLSX.writeFile(
+        wb,
+        "Membre-Groupe/" +
+        "Report-" +
+        now.getFullYear() +
+        "-" +
+        now.getMonth() +
+        "-" +
+        now.getDate() +
+        " at " +
+        now.getHours() +
+        "_" +
+        now.getMinutes() +
+        "_" +
+        now.getMilliseconds() +
+        ".xlsx"
+    );
 }
 
 function* range(start = 0, end = null, step = 1) {
@@ -152,9 +123,21 @@ async function user_get_request_waiter(firsts_users_uid, cursor, group_id_and_id
                         `%c${result.error.toUpperCase()}. RETRY WHEN THIS FEATURE WILL BE UNLOCKED`,
                         "color: red; font-weight: 900; font-size: 25px;padding: 2px"
                     );
-                    download(result.first_user_list, Object.keys(result.first_user_list).length);
+                    const url = data_concat_and_add_to_table(result);
+                    download_as_excel(table);
+                    chrome.runtime.sendMessage(
+                        { message: "first_users_uid_and_cursor", 'url': url },
+                    );
                 } else {
-                    download(result, Object.keys(result).length);
+                    console.log(
+                        "%cDOWNLOADING",
+                        "color: white; font-weight: 900; font-size: 25px; background-color: blue;padding: 2px"
+                    );
+                    const url = data_concat_and_add_to_table(result);
+                    download_as_excel(table);
+                    chrome.runtime.sendMessage(
+                        { message: "first_users_uid_and_cursor", 'url': url },
+                    );
                 }
             })
             .catch(console.error);
@@ -163,7 +146,11 @@ async function user_get_request_waiter(firsts_users_uid, cursor, group_id_and_id
             "%cERROR!!! PLEASE RETRY OR CONTACT ME",
             "color: red; font-weight: 900; font-size: 25px;padding: 2px"
         );
-        download(firsts_users_uid, Object.keys(firsts_users_uid).length);
+        const url = data_concat_and_add_to_table(result);
+        download_as_excel(table);
+        chrome.runtime.sendMessage(
+            { message: "first_users_uid_and_cursor", 'url': url },
+        );
     };
 }
 
@@ -233,9 +220,21 @@ async function get_first_uid_and_cursor() {
                         `%c${result.error.toUpperCase()}. RETRY WHEN THIS FEATURE WILL BE UNLOCKED`,
                         "color: red; font-weight: 900; font-size: 25px;padding: 2px"
                     );
-                    download(result.first_user_list, Object.keys(result.first_user_list).length);
+                    const url = data_concat_and_add_to_table(result);
+                    download_as_excel(table);
+                    chrome.runtime.sendMessage(
+                        { message: "first_users_uid_and_cursor", 'url': url },
+                    );
                 } else {
-                    download(result, Object.keys(result).length);
+                    console.log(
+                        "%cDOWNLOADING",
+                        "color: white; font-weight: 900; font-size: 25px; background-color: blue;padding: 2px"
+                    );
+                    const url = data_concat_and_add_to_table(result);
+                    download_as_excel(table);
+                    chrome.runtime.sendMessage(
+                        { message: "first_users_uid_and_cursor", 'url': url },
+                    );
                 }
             })
             .catch(console.error);
@@ -244,7 +243,11 @@ async function get_first_uid_and_cursor() {
             "%cERROR!!! PLEASE RETRY OR CONTACT ME",
             "color: red; font-weight: 900; font-size: 25px;padding: 2px"
         );
-        download(firsts_users_uid, Object.keys(firsts_users_uid).length);
+        const url = data_concat_and_add_to_table(result);
+        download_as_excel(table);
+        chrome.runtime.sendMessage(
+            { message: "first_users_uid_and_cursor", 'url': url },
+        );
     };
 }
 
