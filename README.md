@@ -20,16 +20,19 @@ Open your Chrome browser and enable extension developer mode following the steps
 ### Step 1
 
 Open extension tab
+
 ![Step 1 screenshot](https://github.com/UlrichCODJIA/Membre-groupe/blob/main/1.png)
 
 ### Step 2
 
 activate developer mode
+
 ![Step 2 screenshot](https://github.com/UlrichCODJIA/Membre-groupe/blob/main/2.png)
 
 ### Step 3
 
 Charge your extension files
+
 ![Step 3 screenshot](https://github.com/UlrichCODJIA/Membre-groupe/blob/main/3.png)
 
 Your are now ready to go!!!
