@@ -1,46 +1,48 @@
 {
-    "name": "Membre-Groupe",
-    "version": "1.0.0",
-    "manifest_version": 3,
-    "description": "It is an extension that allows us to extract the UID's, names and surnames of the members of a Facebook group.",
-    "icons": {
-      "16": "icons/icon-16.png",
-      "128": "icons/icon-128.png"
-    },
-    "background": {
-      "service_worker": "./scripts/background.js"
-    },
-    "permissions": [
-      "tabs",
-      "storage",
-      "scripting",
-      "downloads"
-    ],
-    "host_permissions": [
-      "http://www.facebook.com/*",
-      "https://www.facebook.com/*",
-      "http://web.facebook.com/*",
-      "https://web.facebook.com/*"
-    ],
-    "content_scripts": [{
+  "name": "Membre-Groupe",
+  "version": "1.0.0",
+  "manifest_version": 3,
+  "description": "It is an extension that allows us to extract the UID's, names and surnames of the members of a Facebook group.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "128": "icons/icon-128.png"
+  },
+  "background": {
+    "service_worker": "./scripts/background.js"
+  },
+  "permissions": [
+    "tabs",
+    "storage",
+    "scripting",
+    "downloads"
+  ],
+  "host_permissions": [
+    "http://www.facebook.com/*",
+    "https://www.facebook.com/*",
+    "http://web.facebook.com/*",
+    "https://web.facebook.com/*"
+  ],
+  "content_scripts": [
+    {
       "matches": [
         "http://www.facebook.com/*",
         "https://www.facebook.com/*",
         "http://web.facebook.com/*",
         "https://web.facebook.com/*"
       ],
-        "all_frames": true,
-        "js": ["./scripts/xlsx.full.min.js", "./scripts/contentscript.js"]
-    }],
-    "action": {
-      "default_icon": {
-        "19": "icons/icon-16.png",
-        "38": "icons/icon-32.png"
-      },
-      "default_title": "Membre-Groupe",
-      "default_popup": "popup.html"
+      "all_frames": true,
+      "js": [
+        "./scripts/xlsx.full.min.js",
+        "./scripts/contentscript.js"
+      ]
     }
+  ],
+  "action": {
+    "default_icon": {
+      "19": "icons/icon-16.png",
+      "38": "icons/icon-32.png"
+    },
+    "default_title": "Membre-Groupe",
+    "default_popup": "popup.html"
   }
-  
-  
-  
+}

@@ -1,5 +1,5 @@
-const group_member_count = parseInt(/group_member_profiles":{"count":([^"]+),/g.exec(document.body.innerHTML)[1]);
-var numbers = Array.from(range(8000, 100008000, 8000));
+var cursor_res;
+var all_users_uid = {};
 
 let table = document.createElement('table');
 table.style.display = 'none';
@@ -21,18 +21,24 @@ table.appendChild(tbody);
 // Adding the entire table to the body tag
 document.getElementsByTagName('body')[0].appendChild(table);
 
+function DeleteRows() {
+    var rowCount = table.rows.length;
+    for (var i = rowCount - 1; i > 0; i--) {
+        table.deleteRow(i);
+    }
+}
+
 chrome.runtime.onMessage.addListener((response, callback) => {
     if (response.message == "start_membre_groupe") {
         console.log(
             "%cStart Membre-Groupe",
             "color: white; font-weight: 900; font-size: 25px; background-color: blue;padding: 2px"
         );
-        if (group_member_count < 8500) {
-            console.log("%cYou need to wait approximatively 10min or less for the extraction to finish.", "font-weight: 900; font-size: 20px")
+        if (response.cursor != undefined) {
+            get_first_uid_and_cursor(response.cursor);
         } else {
-            console.log(`%cYou need to wait approximatively ${(Math.round(group_member_count / 8000) * 10) + ((Math.round(group_member_count / 8000) - 1) * 30)}min or less for the extraction to finish.`, "font-weight: 900; font-size: 20px");
-        };
-        get_first_uid_and_cursor();
+            get_first_uid_and_cursor();
+        }
     }
 });
 
@@ -66,8 +72,7 @@ function download_as_excel(table) {
     /* Export to file (start a download) */
     XLSX.writeFile(
         wb,
-        "Membre-Groupe/" +
-        "Report-" +
+        "Membre-Groupe/Report-" +
         now.getFullYear() +
         "-" +
         now.getMonth() +
@@ -83,78 +88,17 @@ function download_as_excel(table) {
     );
 }
 
-function* range(start = 0, end = null, step = 1) {
-    if (end == null) {
-        end = start;
-        start = 0;
-    }
-
-    for (let i = start; i < end; i += step) {
-        yield i;
-    }
-}
-
-async function user_get_request_waiter(firsts_users_uid, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a) {
-    console.clear();
-    console.log(
-        "%cWaiting 30 minutes to continue extraction",
-        "color: white; font-weight: 900; font-size: 25px; background-color: blue;padding: 2px"
-    );
-
-    const asyncUppercase = item =>
-        new Promise(resolve =>
-            setTimeout(
-                () => resolve(item.toUpperCase())
-                , 1800000)
-        );
-
-    if (Object.keys(firsts_users_uid).length < numbers.slice(-1)[0] && numbers[0] <= group_member_count + 32800) {
-        const uppercaseItem = await asyncUppercase('a');
-        console.clear();
-        get_uid(progressCallback, firsts_users_uid, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a, Object.keys(firsts_users_uid).length + 8000)
-            .then(result => {
-                if (result.cursor != undefined) {
-                    var cursor_res = result.cursor;
-                    var firsts_users_uid_res = result.first_user_list;
-                    numbers.shift();
-                    user_get_request_waiter(firsts_users_uid_res, cursor_res, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a, Object.keys(firsts_users_uid_res).length + 8000);
-                } else if (result.error != undefined) {
-                    console.log(
-                        `%c${result.error.toUpperCase()}. RETRY WHEN THIS FEATURE WILL BE UNLOCKED`,
-                        "color: red; font-weight: 900; font-size: 25px;padding: 2px"
-                    );
-                    const url = data_concat_and_add_to_table(result);
-                    download_as_excel(table);
-                    chrome.runtime.sendMessage(
-                        { message: "first_users_uid_and_cursor", 'url': url },
-                    );
-                } else {
-                    console.log(
-                        "%cDOWNLOADING",
-                        "color: white; font-weight: 900; font-size: 25px; background-color: blue;padding: 2px"
-                    );
-                    const url = data_concat_and_add_to_table(result);
-                    download_as_excel(table);
-                    chrome.runtime.sendMessage(
-                        { message: "first_users_uid_and_cursor", 'url': url },
-                    );
-                }
-            })
-            .catch(console.error);
-    } else {
-        console.log(
-            "%cERROR!!! PLEASE RETRY OR CONTACT ME",
-            "color: red; font-weight: 900; font-size: 25px;padding: 2px"
-        );
-        const url = data_concat_and_add_to_table(result);
-        download_as_excel(table);
-        chrome.runtime.sendMessage(
-            { message: "first_users_uid_and_cursor", 'url': url },
-        );
+async function get_first_uid_and_cursor(cursor = /{"has_next_page":true,"end_cursor":"([^"]+)"}}/.exec(document.body.innerHTML)[1]) {
+    const group_privacy = /,"text":"Groupe \(([^"]+)\)"}}/gm.exec(document.body.innerHTML);
+    var is_private;
+    if (group_privacy != undefined && group_privacy[1] == "Public") {
+        is_private = false;
+    } else if (group_privacy != undefined && group_privacy[1].slice(0, 4) == "Priv") {
+        is_private = true;
+    }else {
+        is_private = false;
     };
-}
 
-async function get_first_uid_and_cursor() {
     const firsts_users_raw_datas = document.body.innerHTML.matchAll(/":{"__typename":"User","id":"([^"]+)","__isProfile":"User","name":"([^"]+)"/g);
     const analyze = /\?__a=([^"]+)&__user=([^"]+)&__comet_req=([^"]+)&jazoest=([^"]+)","e":"([^"]+)","s":"([^"]+)","w":([^"]+),"f":"([^"]+)","l":null}/.exec(document.head.innerHTML);
     const __a = analyze[1];
@@ -200,30 +144,33 @@ async function get_first_uid_and_cursor() {
     var firsts_users_uid = {};
     for (const datas of firsts_users_raw_datas) {
         firsts_users_uid[datas[2]] = datas[1];
+        all_users_uid[datas[2]] = datas[1];
     }
-    var cursor = /{"has_next_page":true,"end_cursor":"([^"]+)"}}/.exec(document.body.innerHTML);
 
-    if (Object.keys(firsts_users_uid).length != 0 && cursor != null) {
+    if (cursor != undefined) {
         console.clear();
         console.log(
             "%cExtracting",
             "color: white; font-weight: 900; font-size: 25px; background-color: blue;padding: 2px"
         );
-        get_uid(progressCallback, firsts_users_uid, cursor[1], group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a, 8000)
+        console.log(cursor);
+        get_uid(progressCallback, firsts_users_uid, all_users_uid, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a, 12500, is_private)
             .then(result => {
-                if (result.cursor != undefined) {
-                    cursor = result.cursor;
-                    firsts_users_uid = result.first_user_list;
-                    user_get_request_waiter(firsts_users_uid, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a);
-                } else if (result.error != undefined) {
+                if (result.error != undefined) {
                     console.log(
-                        `%c${result.error.toUpperCase()}. RETRY WHEN THIS FEATURE WILL BE UNLOCKED`,
-                        "color: red; font-weight: 900; font-size: 25px;padding: 2px"
+                        `%c${result.error}`,
+                        "color: blue; font-weight: 900; font-size: 25px;padding: 2px"
                     );
-                    const url = data_concat_and_add_to_table(result);
+                    const url = data_concat_and_add_to_table(result.first_user_list);
                     download_as_excel(table);
+                    DeleteRows();
+                    const blob = new Blob([cursor_res], {
+                        type: "text/plain",
+                    });
+                    var cursor_url = URL.createObjectURL(blob);
+                    console.log(Object.keys(all_users_uid).length);
                     chrome.runtime.sendMessage(
-                        { message: "first_users_uid_and_cursor", 'url': url },
+                        { message: "first_users_uid_and_cursor", 'url': url, 'cursor_url': cursor_url , 'msg': result.error},
                     );
                 } else {
                     console.log(
@@ -232,8 +179,9 @@ async function get_first_uid_and_cursor() {
                     );
                     const url = data_concat_and_add_to_table(result);
                     download_as_excel(table);
+                    DeleteRows();
                     chrome.runtime.sendMessage(
-                        { message: "first_users_uid_and_cursor", 'url': url },
+                        { message: "first_users_uid_and_cursor", 'url': url, 'msg': "EXTRACTION COMPLETE"},
                     );
                 }
             })
@@ -243,10 +191,11 @@ async function get_first_uid_and_cursor() {
             "%cERROR!!! PLEASE RETRY OR CONTACT ME",
             "color: red; font-weight: 900; font-size: 25px;padding: 2px"
         );
-        const url = data_concat_and_add_to_table(result);
+        const url = data_concat_and_add_to_table(all_users_uid);
         download_as_excel(table);
+        DeleteRows();
         chrome.runtime.sendMessage(
-            { message: "first_users_uid_and_cursor", 'url': url },
+            { message: "first_users_uid_and_cursor", 'url': url , 'msg': "ERROR!!! PLEASE RETRY OR CONTACT ME"},
         );
     };
 }
@@ -266,9 +215,14 @@ function getElementsByXPath(xpath, parent) {
     return results;
 }
 
-function get_uid(progress, first_user_list, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a, length_check) {
+function get_uid(progress, first_user_list, all_users_uid, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a, limit, is_private = false) {
 
-    const payload = `av=${__user}&__user=${__user}&__a=${__a}&__dyn=&__csr=&__req=&__hs=19276.HYP%3Acomet_pkg.2.1.0.2.1&dpr=1.5&__ccg=EXCELLENT&__rev=${__rev_and__spin_r}&__s=&__hsi=${__hsi}&__comet_req=${__comet_req}&fb_dtsg=${fb_dtsg}&jazoest=${jazoest}&lsd=${lsd}&__spin_r=${__rev_and__spin_r}&__spin_b=${__spin_b}&__spin_t=${__spin_t}&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=GroupsCometMembersPageNewForumMembersSectionRefetchQuery&variables=%7B%22count%22%3A10%2C%22cursor%22%3A%22${cursor}%22%2C%22groupID%22%3A%22${group_id_and_id}%22%2C%22scale%22%3A1.5%2C%22id%22%3A%22${group_id_and_id}%22%7D&server_timestamps=true&doc_id=${doc_id}`;
+    var payload;
+    if (is_private == true) {
+        payload = `av=${__user}&__user=${__user}&__a=${__a}&__dyn=&__csr=&__req=&__hs=19276.HYP%3Acomet_pkg.2.1.0.2.1&dpr=1.5&__ccg=EXCELLENT&__rev=${__rev_and__spin_r}&__s=&__hsi=${__hsi}&__comet_req=${__comet_req}&fb_dtsg=${fb_dtsg}&jazoest=${jazoest}&lsd=${lsd}&__spin_r=${__rev_and__spin_r}&__spin_b=${__spin_b}&__spin_t=${__spin_t}&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=GroupsCometMembersPageNewForumMembersSectionRefetchQuery&variables=%7B%22count%22%3A10%2C%22cursor%22%3A%22${cursor}%22%2C%22groupID%22%3A%22${group_id_and_id}%22%2C%22recruitingGroupFilterNonCompliant%22%3Afalse%2C%22scale%22%3A1.5%2C%22id%22%3A%22${group_id_and_id}%22%7D&server_timestamps=true&doc_id=${doc_id}`;
+    } else {
+        payload = `av=${__user}&__user=${__user}&__a=${__a}&__dyn=&__csr=&__req=&__hs=19276.HYP%3Acomet_pkg.2.1.0.2.1&dpr=1.5&__ccg=EXCELLENT&__rev=${__rev_and__spin_r}&__s=&__hsi=${__hsi}&__comet_req=${__comet_req}&fb_dtsg=${fb_dtsg}&jazoest=${jazoest}&lsd=${lsd}&__spin_r=${__rev_and__spin_r}&__spin_b=${__spin_b}&__spin_t=${__spin_t}&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=GroupsCometMembersPageNewForumMembersSectionRefetchQuery&variables=%7B%22count%22%3A10%2C%22cursor%22%3A%22${cursor}%22%2C%22groupID%22%3A%22${group_id_and_id}%22%2C%22scale%22%3A1.5%2C%22id%22%3A%22${group_id_and_id}%22%7D&server_timestamps=true&doc_id=${doc_id}`;
+    }
     const myHeaders = new Headers({
         'scheme': 'https',
         'accept': '*/*',
@@ -288,34 +242,32 @@ function get_uid(progress, first_user_list, cursor, group_id_and_id, doc_id, lsd
                 throw `${response.status}: ${response.statusText}`;
             }
             response.json().then(json => {
-                console.log(json);
                 try {
                     var new_forum_members = json.data.node.new_forum_members;
                     var user_list = new_forum_members.edges;
                     for (var i = 0; i < user_list.length; i++) {
                         first_user_list[user_list[i].node.name] = user_list[i].node.id;
+                        all_users_uid[user_list[i].node.name] = user_list[i].node.id;
                     };
                 } catch (err) { };
-                if (new_forum_members != undefined && new_forum_members.page_info.has_next_page == true && Object.keys(first_user_list).length < length_check) {
-                    cursor = new_forum_members.page_info.end_cursor
+                if (new_forum_members != undefined && new_forum_members.page_info.has_next_page == true && Object.keys(first_user_list).length < limit) {
+                    cursor_res = cursor = new_forum_members.page_info.end_cursor;
                     progress && progress(first_user_list);
-                    get_uid(progress, first_user_list, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a, length_check)
+                    get_uid(progress, first_user_list, all_users_uid, cursor, group_id_and_id, doc_id, lsd, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a, limit, is_private)
                         .then(resolve)
                         .catch(reject)
-                } else if (new_forum_members != undefined && new_forum_members.page_info.has_next_page == true && Object.keys(first_user_list).length >= length_check) {
+                } else if (json.errors != undefined || Object.keys(first_user_list).length <= limit + 500 && Object.keys(first_user_list).length >= limit) {
                     const new_etat = {};
-                    new_etat['cursor'] = new_forum_members.page_info.end_cursor;
-                    new_etat['first_user_list'] = first_user_list;
-                    progress && progress(first_user_list);
-                    resolve(new_etat);
-                } else if (json.errors != undefined) {
-                    const new_etat = {};
-                    new_etat['error'] = json.errors[0].message;
+                    if (json.errors != undefined) {
+                        new_etat['error'] = `%c${json.errors[0].message.toUpperCase()}. CONTINUE WHEN THIS FEATURE WILL BE UNLOCKED`
+                    } else {
+                        new_etat['error'] = "CONTINUE EXTRACTION AFTER 24 HOURS";
+                    };
                     new_etat['first_user_list'] = first_user_list;
                     progress && progress(first_user_list);
                     resolve(new_etat);
                 } else {
-                    resolve(first_user_list);
+                    resolve(all_users_uid);
                 }
             }).catch(reject);
         }).catch(reject));
