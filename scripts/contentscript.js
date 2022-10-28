@@ -37,7 +37,8 @@ chrome.runtime.onMessage.addListener((response, callback) => {
         if (response.cursor != undefined) {
             get_first_uid_and_cursor(response.cursor);
         } else {
-            get_first_uid_and_cursor();
+            const cursor_regex = [...document.body.innerHTML.matchAll(/"page_info":{"has_next_page":true,"end_cursor":"([^"]+)"}/g)];
+            get_first_uid_and_cursor(cursor_regex[cursor_regex.length - 1][1]);
         }
     }
 });
@@ -88,7 +89,7 @@ function download_as_excel(table) {
     );
 }
 
-async function get_first_uid_and_cursor(cursor = [...document.body.innerHTML.matchAll(/"page_info":{"has_next_page":true,"end_cursor":"([^"]+)"}/g)][[...document.body.innerHTML.matchAll(/"page_info":{"has_next_page":true,"end_cursor":"([^"]+)"}/g)].length - 1][1]) {
+async function get_first_uid_and_cursor(cursor) {
     const group_privacy = /,"text":"Groupe \(([^"]+)\)"}}/gm.exec(document.body.innerHTML);
     var is_private = false;
     if (group_privacy != undefined && group_privacy[1].slice(0, 4) == "Priv") {
@@ -155,7 +156,6 @@ async function get_first_uid_and_cursor(cursor = [...document.body.innerHTML.mat
             "%cExtracting",
             "color: white; font-weight: 900; font-size: 25px; background-color: blue;padding: 2px"
         );
-        console.log(cursor);
         get_uid(progressCallback, firsts_users_uid, all_users_uid, cursor, group_id_and_id, doc_id, lsd, __aaid, __spin_t, __spin_b, __rev_and__spin_r, fb_dtsg, __hsi, jazoest, __comet_req, __user, __a, 12500, is_private)
             .then(result => {
                 if (result.error != undefined) {
